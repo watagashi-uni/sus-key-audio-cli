@@ -1,0 +1,10 @@
+bin/
+*.mp3
+*.wav
+.DS_Store
+music-key-audio-master-mp3/
+music-key-audio-master-mp3-128k/
+test-reencode-in-2/
+test-reencode-out-2/
+*.log
+dist/

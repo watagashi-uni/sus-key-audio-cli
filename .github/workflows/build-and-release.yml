@@ -1,0 +1,143 @@
+name: Build And Release
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build Linux (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh g++ g++-aarch64-linux-gnu
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            CXX=g++ ./scripts/build.sh
+            cp ./bin/render-key-audio ./dist/render-key-audio-linux-x64
+          else
+            aarch64-linux-gnu-g++ -std=c++20 -O2 -Wall -Wextra \
+              -o ./dist/render-key-audio-linux-arm64 ./src/main.cpp
+          fi
+
+      - name: Smoke test (native x64 only)
+        if: matrix.arch == 'x64'
+        run: ./dist/render-key-audio-linux-x64 --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-key-audio-linux-${{ matrix.arch }}
+          path: ./dist/render-key-audio-linux-${{ matrix.arch }}
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            arch: x64
+          - os: macos-14
+            arch: arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          chmod +x ./scripts/build.sh
+          CXX=clang++ ./scripts/build.sh
+          mkdir -p dist
+          cp ./bin/render-key-audio ./dist/render-key-audio-macos-${{ matrix.arch }}
+
+      - name: Smoke test
+        run: ./dist/render-key-audio-macos-${{ matrix.arch }} --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-key-audio-macos-${{ matrix.arch }}
+          path: ./dist/render-key-audio-macos-${{ matrix.arch }}
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MinGW toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-mingw-w64-x86-64 g++-mingw-w64-aarch64
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            x86_64-w64-mingw32-g++ -std=c++20 -O2 -Wall -Wextra \
+              -o ./dist/render-key-audio-windows-x64.exe ./src/main.cpp
+          else
+            aarch64-w64-mingw32-g++ -std=c++20 -O2 -Wall -Wextra \
+              -o ./dist/render-key-audio-windows-arm64.exe ./src/main.cpp
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-key-audio-windows-${{ matrix.arch }}
+          path: ./dist/render-key-audio-windows-${{ matrix.arch }}.exe
+          if-no-files-found: error
+
+  release:
+    name: Publish Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-linux
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release-assets/**/render-key-audio-linux-*
+            release-assets/**/render-key-audio-macos-*
+            release-assets/**/render-key-audio-windows-*.exe
