@@ -57,7 +57,7 @@ namespace
     {
         fs::path susPath;
         fs::path outPath;
-        fs::path soundRoot = "/Users/watagashi/Documents/Code/sekai-mmw-preview-web/public/assets/mmw/sound";
+        fs::path soundRoot;
         std::optional<double> offsetMs;
         std::string format;
     };
@@ -1266,6 +1266,32 @@ namespace
         return event.kind;
     }
 
+    fs::path resolveDefaultSoundRoot(const char* argv0)
+    {
+        std::error_code error;
+        if (argv0 != nullptr && std::string_view(argv0).size() > 0)
+        {
+            const fs::path executablePath = fs::absolute(fs::path(argv0), error);
+            if (!error)
+            {
+                const fs::path candidate = executablePath.parent_path().parent_path() / "assets" / "sound";
+                if (fs::exists(candidate, error) && fs::is_directory(candidate, error))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        error.clear();
+        const fs::path cwdCandidate = fs::current_path(error) / "assets" / "sound";
+        if (!error && fs::exists(cwdCandidate, error) && fs::is_directory(cwdCandidate, error))
+        {
+            return cwdCandidate;
+        }
+
+        return fs::path("assets") / "sound";
+    }
+
     CliOptions parseArgs(int argc, char** argv)
     {
         CliOptions options;
@@ -1304,6 +1330,7 @@ namespace
             else if (token == "--help" || token == "-h")
             {
                 std::cout << "Usage: render-key-audio --sus <chart.sus> --out <output.mp3> [--offset <ms>] [--format mp3|wav] [--sound-root <dir>]\n";
+                std::cout << "Default sound-root: ./assets/sound (or ../assets/sound beside binary)\n";
                 std::exit(0);
             }
         }
@@ -1311,6 +1338,11 @@ namespace
         if (options.susPath.empty() || options.outPath.empty())
         {
             throw std::runtime_error("Missing required --sus or --out");
+        }
+
+        if (options.soundRoot.empty())
+        {
+            options.soundRoot = resolveDefaultSoundRoot(argc > 0 ? argv[0] : nullptr);
         }
 
         return options;

@@ -1,10 +1,13 @@
 #!/bin/zsh
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 MASTERDATA="/Users/watagashi/Documents/Code/Sekai/masterdata/musics.json"
 SCORE_ROOT="/Users/watagashi/Documents/Code/Sekai/data/assets/sekai/assetbundle/resources/startapp/music/music_score"
-BINARY="/Users/watagashi/Documents/Code/sus-key-audio-cli/bin/render-key-audio"
-SOUND_ROOT="/Users/watagashi/Documents/Code/sekai-mmw-preview-web/public/assets/mmw/sound"
+BINARY="$ROOT_DIR/bin/render-key-audio"
+SOUND_ROOT="$ROOT_DIR/assets/sound"
 DIFFICULTY="master"
 OUT_DIR=""
 FORCE=0
@@ -27,7 +30,7 @@ Options:
   --masterdata <path>    Path to musics.json
   --score-root <path>    Root path of music_score
   --binary <path>        Path to render-key-audio binary
-  --sound-root <path>    Path to MMW sound assets
+  --sound-root <path>    Path to sound assets (default: repo assets/sound)
   --difficulty <name>    Chart difficulty, default: master
   --force                Re-render even if output mp3 already exists
   --help                 Show this help

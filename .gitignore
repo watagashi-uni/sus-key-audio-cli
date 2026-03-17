@@ -1,6 +1,9 @@
 bin/
 *.mp3
 *.wav
+!assets/
+!assets/sound/
+!assets/sound/*.mp3
 .DS_Store
 music-key-audio-master-mp3/
 music-key-audio-master-mp3-128k/

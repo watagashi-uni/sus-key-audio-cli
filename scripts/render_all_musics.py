@@ -15,8 +15,9 @@ DEFAULT_MASTERDATA = pathlib.Path("/Users/watagashi/Documents/Code/Sekai/masterd
 DEFAULT_SCORE_ROOT = pathlib.Path(
     "/Users/watagashi/Documents/Code/Sekai/data/assets/sekai/assetbundle/resources/startapp/music/music_score"
 )
-DEFAULT_BINARY = pathlib.Path("/Users/watagashi/Documents/Code/sus-key-audio-cli/bin/render-key-audio")
-DEFAULT_SOUND_ROOT = pathlib.Path("/Users/watagashi/Documents/Code/sekai-mmw-preview-web/public/assets/mmw/sound")
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
+DEFAULT_BINARY = PROJECT_ROOT / "bin" / "render-key-audio"
+DEFAULT_SOUND_ROOT = PROJECT_ROOT / "assets" / "sound"
 
 
 def parse_args() -> argparse.Namespace:

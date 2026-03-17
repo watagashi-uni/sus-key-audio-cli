@@ -9,6 +9,7 @@
 - 支持 `offset`（与网页预览一致：外部正数，内部取负）
 - 输出 `mp3` 或 `wav`
 - 默认 `mp3` 码率为 `128 kbps`
+- 仓库内置音效文件，默认不依赖外部项目路径
 
 ## 来源与许可
 
@@ -25,6 +26,7 @@
 
 ```text
 sus-key-audio-cli/
+  assets/sound/
   src/main.cpp
   scripts/build.sh
   scripts/render_all_musics.sh
@@ -83,7 +85,13 @@ cd /Users/watagashi/Documents/Code/sus-key-audio-cli
 默认 `sound-root`：
 
 ```text
-/Users/watagashi/Documents/Code/sekai-mmw-preview-web/public/assets/mmw/sound
+./assets/sound
+```
+
+内置音效文件位于：
+
+```text
+assets/sound/se_live_*.mp3
 ```
 
 offset 规则：
@@ -118,6 +126,7 @@ offset 规则：
 - 多进程并发（`zsh + jq + xargs -P`）
 - 已有同名 `musicId.mp3` 则跳过
 - 加 `--force` 才覆盖重跑
+- 默认使用仓库内置 `assets/sound`
 
 常用参数：
 
