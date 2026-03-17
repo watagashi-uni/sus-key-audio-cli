@@ -53,27 +53,28 @@ jobs:
 
   build-macos:
     name: Build macOS (${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-13
-            arch: x64
-          - os: macos-14
-            arch: arm64
+        arch: [x64, arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build
         run: |
-          chmod +x ./scripts/build.sh
-          CXX=clang++ ./scripts/build.sh
           mkdir -p dist
-          cp ./bin/render-key-audio ./dist/render-key-audio-macos-${{ matrix.arch }}
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            clang++ -std=c++20 -O2 -Wall -Wextra -arch x86_64 \
+              -o ./dist/render-key-audio-macos-x64 ./src/main.cpp
+          else
+            clang++ -std=c++20 -O2 -Wall -Wextra -arch arm64 \
+              -o ./dist/render-key-audio-macos-arm64 ./src/main.cpp
+          fi
 
       - name: Smoke test
+        if: matrix.arch == 'arm64'
         run: ./dist/render-key-audio-macos-${{ matrix.arch }} --help
 
       - name: Upload artifact
@@ -85,30 +86,31 @@ jobs:
 
   build-windows:
     name: Build Windows (${{ matrix.arch }})
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        include:
+          - arch: x64
+            vc_arch: x64
+          - arch: arm64
+            vc_arch: amd64_arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install MinGW toolchains
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y g++-mingw-w64-x86-64 g++-mingw-w64-aarch64
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.vc_arch }}
 
       - name: Build
+        shell: pwsh
         run: |
-          mkdir -p dist
-          if [ "${{ matrix.arch }}" = "x64" ]; then
-            x86_64-w64-mingw32-g++ -std=c++20 -O2 -Wall -Wextra \
-              -o ./dist/render-key-audio-windows-x64.exe ./src/main.cpp
-          else
-            aarch64-w64-mingw32-g++ -std=c++20 -O2 -Wall -Wextra \
-              -o ./dist/render-key-audio-windows-arm64.exe ./src/main.cpp
-          fi
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          cl /std:c++20 /O2 /EHsc /W4 /nologo `
+            /Fe:dist\render-key-audio-windows-${{ matrix.arch }}.exe `
+            src\main.cpp
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
